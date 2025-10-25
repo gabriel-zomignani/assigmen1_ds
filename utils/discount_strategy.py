@@ -1,3 +1,4 @@
+# utils/discount_strategy.py
 class DiscountStrategy:
     def apply(self, order):
         return order
@@ -12,8 +13,40 @@ class LoyaltyDiscount(DiscountStrategy):
             disc = amt * self.rate
             order["final_amount"] = amt - disc
             order["discount_applied"] = disc
-        except:
-            # if something is weird, just leave it
+        except Exception:
             order["final_amount"] = order.get("amount")
-            order["discount_applied"] = 0
+            order["discount_applied"] = 0.0
         return order
+
+# New: simple factory function that returns a callable(row, rate)
+def get_discount_strategy(name: str):
+    """
+    Returns a function(row, rate) -> (final_amount, discount_applied)
+    Kept very small on purpose.
+    """
+    n = (name or "loyalty").lower()
+
+    def _loyalty(row, rate):
+        try:
+            amt = float(row["amount"])
+        except Exception:
+            try:
+                amt = float(row.get("final_amount", 0))
+            except Exception:
+                amt = 0.0
+        disc = amt * float(rate)
+        return amt - disc, disc
+
+    def _none(row, rate):
+        try:
+            amt = float(row["amount"])
+        except Exception:
+            try:
+                amt = float(row.get("final_amount", 0))
+            except Exception:
+                amt = 0.0
+        return amt, 0.0
+
+    if n in ("loyalty", "default"):
+        return _loyalty
+    return _none

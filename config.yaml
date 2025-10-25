@@ -5,7 +5,7 @@ invalid_output: "data/invalid_orders.csv"
 threads:
   reader: 1
   validator: 1
-  discount: 1
+  discount: 4
   writer: 1
 
 retry:

@@ -1,3 +1,4 @@
 order_id,customer_id,amount,currency,category,loyalty_points,error
-3,CUST-123,abc,USD,books,5,Amount must be a number
-6,CUST-126,90,JPY,books,15,Unsupported currency: JPY
+S001,CUST-101,120.50,USD,electronics,10,duplicate
+S002,CUST-102,80,EUR,books,0,duplicate
+S003,CUST-103,200,BRL,home,30,duplicate

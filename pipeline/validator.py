@@ -1,49 +1,74 @@
-class Validator:
-    def __init__(self, in_q, ok_q, bad_q, store=None):
-        self.in_q = in_q
-        self.ok_q = ok_q
-        self.bad_q = bad_q
+# validator.py
+import re
+
+# flexible imports (package or flat)
+try:
+    from pipeline.base_stage import PipelineStage, SENTINEL
+    from utils.idempotency_store import IdempotencyStore
+except ImportError:
+    from base_stage import PipelineStage, SENTINEL
+    from idempotency_store import IdempotencyStore
+
+REQUIRED = ["order_id", "customer_id", "amount", "currency", "category", "loyalty_points"]
+ALLOWED_CCY = {"USD", "EUR", "BRL"}
+CUSTOMER_RE = re.compile(r"^CUST-\d{3}$")  # simple, can relax if needed
+
+class Validator(PipelineStage):
+    """
+    Reads from read->validate queue, emits valid rows to 'out_q' (valid queue),
+    and sends invalid rows to 'invalid_queue'. On finish, sends SENTINEL to both.
+    """
+    def __init__(self, in_q, valid_q, invalid_q, store: IdempotencyStore):
+        super().__init__(in_q, valid_q)
+        self.invalid_queue = invalid_q
         self.store = store
 
-    def run(self):
-        print("validator started.")
-        while True:
-            order = self.in_q.get()
+    def process(self, row):
+         # required fields
+        for k in REQUIRED:
+            if k not in row or row[k] in (None, ""):
+                self.invalid_queue.put({**row, "error": f"missing:{k}"})
+                return None
 
-            if order is None:
-                self.ok_q.put(None)
-                self.bad_q.put(None)
-                print("validator finished.")
-                break
-
-            if self.store and self.store.already_done(order["order_id"]):
-                print("skipping duplicate order", order["order_id"])
-                continue
-
-            error = self.validate_order(order)
-
-            if error:
-                order["error"] = error
-                self.bad_q.put(order)
-            else:
-                if self.store:
-                    self.store.mark_done(order["order_id"])
-                self.ok_q.put(order)
-
-    def validate_order(self, order):
-        """Checks if the order has required fields and valid values."""
-
-        required = ["order_id", "customer_id", "amount", "currency", "category", "loyalty_points"]
-        for field in required:
-            if field not in order or order[field] == "":
-                return f"Missing field: {field}"
-
+        # amount: number and >= 0
         try:
-            float(order["amount"])
-        except:
-            return "Amount must be a number"
+            amt = float(row["amount"])
+        except Exception:
+            self.invalid_queue.put({**row, "error": "invalid_amount"})
+            return None
+        if amt < 0:
+            self.invalid_queue.put({**row, "error": "negative_amount"})
+            return None
 
-        if order["currency"] not in ["USD", "EUR", "BRL"]:
-            return f"Unsupported currency: {order['currency']}"
+        # currency
+        if row["currency"] not in ALLOWED_CCY:
+            self.invalid_queue.put({**row, "error": "unsupported_currency"})
+            return None
 
-        return None
+        # customer_id format (simple)
+        if not CUSTOMER_RE.match(str(row["customer_id"])):
+            self.invalid_queue.put({**row, "error": "invalid_customer_id"})
+            return None
+
+        # loyalty_points: integer and >= 0 (simple)
+        try:
+            lp = int(row["loyalty_points"])
+            if lp < 0:
+                raise ValueError
+        except Exception:
+            self.invalid_queue.put({**row, "error": "invalid_loyalty_points"})
+            return None
+
+        # duplicates (idempotency)
+        oid = str(row["order_id"])
+        if self.store.already_done(oid):
+            self.invalid_queue.put({**row, "error": "duplicate"})
+            return None
+
+        # mark + emit normalized fields
+        self.store.mark_done(oid)
+        return {**row, "amount": amt, "loyalty_points": lp}
+
+    def on_finish(self):
+        # writer waits for a sentinel on INVALID queue too
+        self.invalid_queue.put(SENTINEL)

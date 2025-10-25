@@ -1,78 +1,33 @@
-ORDER PROCESSING SYSTEM
+# Order Processing Pipeline
 
-This project is a simple multithreaded order processing system. It reads orders from a file, validates the data, applies discounts, and writes valid and invalid orders into separate output files.
+A small, threaded pipeline that reads orders, validates them, applies a discount, and writes valid/invalid CSVs.
 
-1. PROJECT FILES
+## Features
+- Input formats: CSV (`.csv`) and JSON Lines (`.jsonl`)
+- Validation: required fields, amount ≥ 0, currency in {USD, EUR, BRL}, `customer_id` like `CUST-123`, `loyalty_points` integer ≥ 0
+- Optional loyalty discount
+- Duplicate protection (idempotency)
+- Light concurrency: multiple **Discount** workers (configurable)
 
-• main.py – Main program
-• config.yaml – System configuration file
-• requirements.txt – List of dependencies
-• Folder: pipeline
-
-reader.py – Reads orders from the input file
-
-validator.py – Checks if orders are valid
-
-discount.py – Applies discount to valid orders
-
-writer.py – Writes output files
-
-• Folder: utils
-
-discount_strategy.py – Handles discount logic (strategy pattern)
-
-idempotency_store.py – Prevents duplicate order processing
-
-retry_decorator.py – Retry mechanism with simple backoff
-
-• Folder: data
-
-input.csv – Example input file
-
-valid_orders.csv – Output: valid processed orders
-
-invalid_orders.csv – Output: invalid orders with errors
-
-idempotent.json – Stores IDs of already processed orders
-
-2. CONFIGURATION (config.yaml)
-
-Example:
-
-input_file: data/input.csv
-valid_output: data/valid_orders.csv
-invalid_output: data/invalid_orders.csv
-discount:
-strategy: loyalty
-loyalty_rate: 0.05
-
-3. INSTALLATION
-
-Install required libraries:
-pip install -r requirements.txt
-
-requirements.txt content:
-pyyaml
-
-4. HOW TO RUN
-
-Run the system using:
+## Quick Start
+```bash
+pip install pyyaml
 python main.py
 
-After running, output files will be saved inside the data/ folder:
-• valid_orders.csv
-• invalid_orders.csv
+What it does
 
-5. HOW THE SYSTEM WORKS (PIPELINE)
+Reader (Factory Method): picks CSV or JSONL reader and streams rows.
 
-Reader → reads orders from the input file.
+Validator (Template Method): checks fields, formats, idempotency; routes invalid rows.
 
-Validator → checks required fields and invalid values.
+Discount (Template Method + Strategy): applies discount; adds final_amount and discount_applied.
 
-Discount → applies discount (example: loyalty points).
+Writer: saves valid and invalid rows to separate CSV files.
 
-Writer → saves valid and invalid orders in separate CSV files.
+Notes
 
-Idempotency → avoids processing the same order twice.
+Set threads.discount to use more discount workers.
 
-Multithreading → each step runs in its own thread using queues to communicate.
+Retries are used when opening files (retry.max_attempts, retry.base_delay).
+
+Idempotency data is stored at data/idempotent.json (you can delete it to reprocess the same orders).
