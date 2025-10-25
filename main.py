@@ -14,19 +14,16 @@ def load_config():
 def main():
     config = load_config()
 
-    # Filas entre as etapas
     q_validate = queue.Queue()
     q_discount = queue.Queue()
     q_output = queue.Queue()
     q_invalid = queue.Queue()
 
-    # Threads das etapas
     reader = Reader(config, q_validate)
     validator = Validator(q_validate, q_discount, q_invalid)
     discount = DiscountApplier(config, q_discount, q_output)
     writer = Writer(config, q_output, q_invalid)
 
-    # Inicia as threads
     threads = [
         threading.Thread(target=reader.run),
         threading.Thread(target=validator.run),

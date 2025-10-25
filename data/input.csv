@@ -2,3 +2,6 @@ order_id,customer_id,amount,currency,category,loyalty_points
 1,CUST-123,100,USD,electronics,50
 2,CUST-123,200,USD,fashion,10
 3,CUST-123,abc,USD,books,5
+4,CUST-124,150,EUR,books,20
+5,CUST-125,50,BRL,toys,0
+6,CUST-126,90,JPY,books,15
