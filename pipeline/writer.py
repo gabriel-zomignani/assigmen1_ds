@@ -8,11 +8,6 @@ except ImportError:
 SENTINEL = None
 
 class Writer:
-    """
-    Writes two CSVs (valid / invalid).
-    - Retries opening files using config.retry.{max_attempts, base_delay}
-    - Prints final counters at the end.
-    """
     def __init__(self, config, valid_queue, invalid_queue):
         self.valid_queue = valid_queue
         self.invalid_queue = invalid_queue

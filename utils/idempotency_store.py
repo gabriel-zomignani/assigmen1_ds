@@ -22,7 +22,7 @@ class IdempotencyStore:
         else:
             self.data = {}
 
-        # load retry defaults (best effort)
+        # load retry defaults
         self._retry_max = 3
         self._retry_base = 0.1
         try:

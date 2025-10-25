@@ -1,16 +1,11 @@
-# pipeline/discount.py
 try:
     from pipeline.base_stage import PipelineStage
     from utils.discount_strategy import get_discount_strategy
 except ImportError:
-    # fallback if running flat (not packages)
     from base_stage import PipelineStage
     from discount_strategy import get_discount_strategy
 
 class DiscountApplier(PipelineStage):
-    """
-    Applies configured discount and emits to writer queue.
-    """
     def __init__(self, config, in_q, out_q):
         super().__init__(in_q, out_q)
         dcfg = (config.get("discount") or {})

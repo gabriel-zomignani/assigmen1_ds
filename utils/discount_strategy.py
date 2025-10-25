@@ -18,12 +18,9 @@ class LoyaltyDiscount(DiscountStrategy):
             order["discount_applied"] = 0.0
         return order
 
-# New: simple factory function that returns a callable(row, rate)
+# factory function that returns a callable
 def get_discount_strategy(name: str):
-    """
-    Returns a function(row, rate) -> (final_amount, discount_applied)
-    Kept very small on purpose.
-    """
+
     n = (name or "loyalty").lower()
 
     def _loyalty(row, rate):

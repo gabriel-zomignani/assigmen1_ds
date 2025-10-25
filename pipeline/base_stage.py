@@ -2,11 +2,6 @@
 SENTINEL = None
 
 class PipelineStage:
-    """
-    Template Method (very simple):
-      - run(): fixed loop (get -> process -> emit)
-      - process(item): override in subclasses
-    """
     def __init__(self, in_q, out_q=None):
         self.in_q = in_q
         self.out_q = out_q

@@ -14,10 +14,6 @@ ALLOWED_CCY = {"USD", "EUR", "BRL"}
 CUSTOMER_RE = re.compile(r"^CUST-\d{3}$")  # simple, can relax if needed
 
 class Validator(PipelineStage):
-    """
-    Reads from read->validate queue, emits valid rows to 'out_q' (valid queue),
-    and sends invalid rows to 'invalid_queue'. On finish, sends SENTINEL to both.
-    """
     def __init__(self, in_q, valid_q, invalid_q, store: IdempotencyStore):
         super().__init__(in_q, valid_q)
         self.invalid_queue = invalid_q

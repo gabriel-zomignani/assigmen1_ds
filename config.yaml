@@ -2,16 +2,13 @@ input_file: "data/input.csv"
 valid_output: "data/valid_orders.csv"
 invalid_output: "data/invalid_orders.csv"
 
+discount:
+  strategy: loyalty
+  loyalty_rate: 0.05
+
 threads:
-  reader: 1
-  validator: 1
-  discount: 4
-  writer: 1
+  discount: 4 
 
 retry:
   max_attempts: 3
   base_delay: 0.1
-
-discount:
-  strategy: "loyalty"
-  loyalty_rate: 0.05

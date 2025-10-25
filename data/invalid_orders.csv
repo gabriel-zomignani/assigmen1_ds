@@ -1,4 +1,4 @@
 order_id,customer_id,amount,currency,category,loyalty_points,error
 S001,CUST-101,120.50,USD,electronics,10,duplicate
 S002,CUST-102,80,EUR,books,0,duplicate
-S003,CUST-103,200,BRL,home,30,duplicate
+S003,CUST-103,2b0,BRL,home,30,invalid_amount
