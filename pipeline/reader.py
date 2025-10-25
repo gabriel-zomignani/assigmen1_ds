@@ -2,35 +2,33 @@ import csv
 import json
 
 class Reader:
-    def __init__(self, config, output_queue):
-        self.input_file = config["input_file"]
-        self.output_queue = output_queue
+    def __init__(self, config, out_q):
+        self.file = config["input_file"]
+        self.out_q = out_q
 
     def run(self):
         print("reader started.")
-
         try:
-            if self.input_file.endswith(".csv"):
+            if self.file.endswith(".csv"):
                 self._read_csv()
-            elif self.input_file.endswith(".jsonl"):
+            elif self.file.endswith(".jsonl"):
                 self._read_jsonl()
             else:
-                print(f"unsupported file format: {self.input_file}")
+                print("unsupported file format:", self.file)
         finally:
-            self.output_queue.put(None)
+            self.out_q.put(None)
             print("reader finished and sent termination signal.")
 
     def _read_csv(self):
-        with open(self.input_file, mode="r", newline="", encoding="utf-8") as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                self.output_queue.put(row)
+        with open(self.file, "r", newline="", encoding="utf-8") as f:
+            r = csv.DictReader(f)
+            for row in r:
+                self.out_q.put(row)
 
     def _read_jsonl(self):
-        with open(self.input_file, "r", encoding="utf-8") as file:
-            for line in file:
+        with open(self.file, "r", encoding="utf-8") as f:
+            for line in f:
                 try:
-                    order = json.loads(line.strip())
-                    self.output_queue.put(order)
+                    self.out_q.put(json.loads(line.strip()))
                 except json.JSONDecodeError:
                     print("invalid JSON skipped.")

@@ -1,42 +1,49 @@
 class Validator:
-    def __init__(self, input_queue, valid_queue, invalid_queue):
-        self.input_queue = input_queue
-        self.valid_queue = valid_queue
-        self.invalid_queue = invalid_queue
+    def __init__(self, in_q, ok_q, bad_q, store=None):
+        self.in_q = in_q
+        self.ok_q = ok_q
+        self.bad_q = bad_q
+        self.store = store
 
     def run(self):
-        print("Validator started.")
-
+        print("validator started.")
         while True:
-            order = self.input_queue.get()
+            order = self.in_q.get()
 
             if order is None:
-                self.valid_queue.put(None)
-                self.invalid_queue.put(None)
-                print("Validator finished and sent termination signal.")
+                self.ok_q.put(None)
+                self.bad_q.put(None)
+                print("validator finished.")
                 break
+
+            if self.store and self.store.already_done(order["order_id"]):
+                print("skipping duplicate order", order["order_id"])
+                continue
 
             error = self.validate_order(order)
 
             if error:
                 order["error"] = error
-                self.invalid_queue.put(order)
+                self.bad_q.put(order)
             else:
-                self.valid_queue.put(order)
+                if self.store:
+                    self.store.mark_done(order["order_id"])
+                self.ok_q.put(order)
 
     def validate_order(self, order):
-        required_fields = ["order_id", "customer_id", "amount", "currency", "category", "loyalty_points"]
+        """Checks if the order has required fields and valid values."""
 
-        for field in required_fields:
+        required = ["order_id", "customer_id", "amount", "currency", "category", "loyalty_points"]
+        for field in required:
             if field not in order or order[field] == "":
                 return f"Missing field: {field}"
 
         try:
             float(order["amount"])
-        except ValueError:
+        except:
             return "Amount must be a number"
 
         if order["currency"] not in ["USD", "EUR", "BRL"]:
-            return "Unsupported currency"
+            return f"Unsupported currency: {order['currency']}"
 
         return None
